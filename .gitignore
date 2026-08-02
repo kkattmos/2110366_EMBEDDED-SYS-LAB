@@ -1,0 +1,13 @@
+# This file only matters if you choose to `git init` this course folder on its own
+# (course folders live under $COURSES_DIR, outside the main class-repo git repo, so
+# nothing here is required — it's here in case you want per-course version control too).
+
+# per-course secrets / local state
+.env
+.notebooklm_manifest.json
+
+# OS junk
+.DS_Store
+
+# Uncomment if this course's slides are copyrighted and you make this its own public repo:
+# 1_Slides/
