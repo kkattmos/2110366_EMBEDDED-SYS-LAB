@@ -1,0 +1,28 @@
+23:09:44 **** Incremental Build of configuration Debug for project Lab1 ****
+make -j12 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F411xE -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+../Core/Src/main.c: In function 'main':
+../Core/Src/main.c:70:20: warning: unused variable 'j' [-Wunused-variable]
+   70 |         uint32_t i,j;
+      |                    ^
+../Core/Src/main.c:70:18: warning: unused variable 'i' [-Wunused-variable]
+   70 |         uint32_t i,j;
+      |                  ^
+../Core/Src/main.c: At top level:
+../Core/Src/main.c:162:13: warning: 'MX_USART2_UART_Init' defined but not used [-Wunused-function]
+  162 | static void MX_USART2_UART_Init(void)
+      |             ^~~~~~~~~~~~~~~~~~~
+arm-none-eabi-gcc -o "Lab1.elf" @"objects.list"   -mcpu=cortex-m4 -T"/home/kkattmos/Documents/embedded_sys_lab_workspace/Lab1/STM32F411RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Lab1.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Lab1.elf
+ 
+arm-none-eabi-size  Lab1.elf 
+arm-none-eabi-objdump -h -S Lab1.elf  > "Lab1.list"
+   text	   data	    bss	    dec	    hex	filename
+   6092	     12	   1572	   7676	   1dfc	Lab1.elf
+Finished building: default.size.stdout
+ 
+Finished building: Lab1.list
+ 
+
+23:09:45 Build Finished. 0 errors, 3 warnings. (took 454ms)
+
