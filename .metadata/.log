@@ -1559,3 +1559,6 @@ Command-line arguments:  -os linux -ws gtk -arch x86_64
 
 !ENTRY org.eclipse.cdt.core 1 0 2026-08-25 16:26:10.641
 !MESSAGE Indexed 'Lab3_1' (20 sources, 82 headers) in 4.29 sec: 4,801 declarations; 22,954 references; 0 unresolved inclusions; 1 syntax errors; 2 unresolved names (0.0072%)
+
+!ENTRY org.eclipse.cdt.core 1 0 2026-08-25 16:41:22.237
+!MESSAGE Indexed 'Lab3_2' (20 sources, 82 headers) in 2.57 sec: 4,801 declarations; 22,954 references; 0 unresolved inclusions; 1 syntax errors; 2 unresolved names (0.0072%)
