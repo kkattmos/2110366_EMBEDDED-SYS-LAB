@@ -43,7 +43,7 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+volatile uint32_t blink_period = 200;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,6 +97,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+    HAL_Delay(blink_period);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -227,7 +229,20 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+  if (GPIO_Pin == GPIO_PIN_13) {
+    static uint32_t last_press_time = 0;
+    uint32_t current_time = HAL_GetTick();
 
+    if (current_time - last_press_time > 50) {
+      if (blink_period == 200) blink_period = 1000;
+      else if (blink_period == 1000) blink_period = 5000;
+      else blink_period = 200;
+    }
+
+    last_press_time = current_time;
+  }
+}
 /* USER CODE END 4 */
 
 /**
