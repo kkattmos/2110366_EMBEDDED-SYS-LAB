@@ -1,4 +1,4 @@
-16:47:21 **** Build of configuration Debug for project Lab1 ****
+22:53:53 **** Build of configuration Debug for project Lab1 ****
 make -j12 all 
 arm-none-eabi-size  Lab1.elf 
    text	   data	    bss	    dec	    hex	filename
@@ -6,5 +6,5 @@ arm-none-eabi-size  Lab1.elf
 Finished building: default.size.stdout
  
 
-16:47:21 Build Finished. 0 errors, 0 warnings. (took 319ms)
+22:53:54 Build Finished. 0 errors, 0 warnings. (took 132ms)
 
