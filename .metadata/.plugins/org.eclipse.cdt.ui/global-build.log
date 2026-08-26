@@ -1797,3 +1797,10 @@ arm-none-eabi-size  Lab3_4.elf
   11248	     12	   1644	  12904	   3268	Lab3_4.elf
 Finished building: default.size.stdout
  
+11:17:11 **** Incremental Build of configuration Debug for project Lab3_1 ****
+make -j12 all 
+arm-none-eabi-size  Lab3_1.elf 
+   text	   data	    bss	    dec	    hex	filename
+   8136	     16	   1648	   9800	   2648	Lab3_1.elf
+Finished building: default.size.stdout
+ 
