@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timer Bench — STM32 counter, prescaler and output simulator</title>
+<style>
+  :root{
+    --ink:#0B1621;
+    --panel:#122334;
+    --panel-2:#17303F;
+    --grid:#1E3B52;
+    --edge:#2B5474;
+    --text:#DCE7EF;
+    --dim:#7E9AB0;
+    --amber:#F5A524;
+    --cyan:#45D0E5;
+    --red:#FF5C4D;
+    --green:#7BE38B;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
+    --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.5;
+    padding:18px;
+  }
+  a{color:var(--cyan)}
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{
+    border-bottom:1px solid var(--edge);
+    padding-bottom:14px;margin-bottom:18px;
+  }
+  h1{
+    font-family:var(--mono);
+    font-size:clamp(18px,2.6vw,26px);
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    margin:0 0 6px;
+    font-weight:600;
+  }
+  header p{margin:0;color:var(--dim);max-width:70ch}
+
+  .layout{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
+  @media (max-width:860px){.layout{grid-template-columns:1fr}}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--edge);
+    border-radius:6px;
+    padding:14px;
+  }
+  .panel + .panel{margin-top:14px}
+
+  .label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--dim);
+    display:block;
+    margin-bottom:6px;
+  }
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type=number]{
+    width:100%;
+    background:var(--ink);
+    color:var(--text);
+    border:1px solid var(--edge);
+    border-radius:4px;
+    padding:6px 8px;
+    font-family:var(--mono);
+    font-size:15px;
+  }
+  input[type=range]{width:100%;accent-color:var(--cyan);margin-top:8px}
+  select{
+    width:100%;
+    background:var(--ink);color:var(--text);
+    border:1px solid var(--edge);border-radius:4px;
+    padding:6px 8px;font-family:var(--mono);font-size:14px;
+  }
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+  .modes{display:flex;flex-direction:column;gap:6px}
+  .modes label{
+    display:flex;gap:8px;align-items:flex-start;
+    padding:7px 9px;border:1px solid var(--edge);border-radius:4px;
+    cursor:pointer;background:var(--panel-2);
+  }
+  .modes label:hover{border-color:var(--cyan)}
+  .modes input{margin-top:3px;accent-color:var(--cyan)}
+  .modes .m-name{font-family:var(--mono);font-size:13px}
+  .modes .m-note{display:block;color:var(--dim);font-size:12px;line-height:1.35}
+
+  .presets{display:flex;flex-wrap:wrap;gap:6px}
+  button{
+    font-family:var(--mono);font-size:12px;
+    background:var(--panel-2);color:var(--text);
+    border:1px solid var(--edge);border-radius:4px;
+    padding:6px 9px;cursor:pointer;
+  }
+  button:hover{border-color:var(--cyan);color:#fff}
+  button.primary{background:var(--cyan);color:#06202A;border-color:var(--cyan);font-weight:700}
+
+  canvas{width:100%;display:block;border-radius:4px;background:#0A1927}
+  .scope{padding:10px}
+  .scope-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim)}
+  .swatch{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:6px}
+
+  .readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+  .ro{background:var(--panel-2);border:1px solid var(--edge);border-radius:4px;padding:9px 11px}
+  .ro .v{font-family:var(--mono);font-size:19px;color:var(--cyan)}
+  .ro.out .v{color:var(--amber)}
+
+  .formula{
+    margin-top:14px;padding:12px 14px;
+    background:var(--panel-2);border:1px solid var(--edge);border-radius:4px;
+    font-family:var(--mono);font-size:14px;overflow-x:auto;white-space:nowrap;
+  }
+  .formula .top{color:var(--dim);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;white-space:normal}
+  .formula b{color:var(--amber);font-weight:600}
+
+  .status{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:14px;font-family:var(--mono);font-size:13px}
+  .led{
+    width:22px;height:22px;border-radius:50%;
+    background:#1B2E3D;border:1px solid var(--edge);
+    display:inline-block;vertical-align:middle;margin-right:8px;
+    transition:background .04s linear, box-shadow .04s linear;
+  }
+  .led.on{background:var(--green);box-shadow:0 0 14px rgba(123,227,139,.75)}
+  .isr{
+    padding:3px 8px;border:1px solid var(--edge);border-radius:3px;color:var(--dim);
+  }
+  .isr.fire{border-color:var(--red);color:var(--red);background:rgba(255,92,77,.12)}
+
+  .warn{
+    margin-top:12px;padding:9px 12px;border-radius:4px;
+    border:1px solid var(--red);background:rgba(255,92,77,.1);
+    color:#FFC1BA;font-size:13px;display:none;
+  }
+  .warn.show{display:block}
+
+  .tasks{margin-top:18px}
+  .tasks h2{
+    font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--dim);margin:0 0 10px;font-weight:600;
+  }
+  .tasks ol{margin:0;padding-left:20px}
+  .tasks li{margin-bottom:7px;max-width:88ch}
+  code{font-family:var(--mono);font-size:.92em;background:var(--panel-2);padding:1px 5px;border-radius:3px}
+  footer{margin-top:22px;padding-top:12px;border-top:1px solid var(--edge);color:var(--dim);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Timer Bench</h1>
+  <p>Watch what the prescaler, the counter and the auto-reload register 
+actually do. Change a value on the left and the counter, the update 
+events and the output pin all follow. NUCLEO-F411RE values are used 
+throughout.</p>
+</header>
+
+<div class="layout">
+
+  <!-- ------------------------------- controls ------------------------------- -->
+  <div>
+    <div class="panel">
+      <div class="field">
+        <label class="label" for="fclk">Timer clock (f_TIM)</label>
+        <select id="fclk">
+          <option value="100000000" selected="selected">100 MHz — system clock at 100 MHz</option>
+          <option value="84000000">84 MHz</option>
+          <option value="50000000">50 MHz</option>
+          <option value="16000000">16 MHz — HSI, no PLL</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="psc">Prescaler — PSC</label>
+        <input type="number" id="psc" min="0" max="65535" step="1" value="25802">
+        <input type="range" id="pscR" min="0" max="65535" step="1" value="25802" aria-label="Prescaler slider">
+      </div>
+
+      <div class="field">
+        <label class="label" for="arr">Auto-reload — ARR</label>
+        <input type="number" id="arr" min="1" max="4294967295" step="1" value="4999">
+        <input type="range" id="arrR" min="1" max="20000" step="1" value="4999" aria-label="Auto-reload slider">
+      </div>
+
+      <div class="field" id="ccrField" style="opacity: 0.4;">
+        <label class="label" for="ccr">Compare value — CCR (PWM only)</label>
+        <input type="number" id="ccr" min="0" max="4294967295" step="1" value="2500" disabled="disabled">
+        <input type="range" id="ccrR" min="0" max="20000" step="1" value="2500" aria-label="Compare value slider" disabled="disabled">
+      </div>
+    </div>
+
+    <div class="panel">
+      <span class="label">What the timer drives</span>
+      <div class="modes">
+        <label><input type="radio" name="mode" value="irq" checked="checked">
+          <span><span class="m-name">Update interrupt</span>
+          <span class="m-note">The ISR runs once per counter cycle and toggles an LED in software.</span></span></label>
+        <label><input type="radio" name="mode" value="pwm">
+          <span><span class="m-name">PWM on a pin</span>
+          <span class="m-note">Pin is high while CNT &lt; CCR. No CPU work at all.</span></span></label>
+        <label><input type="radio" name="mode" value="toggle">
+          <span><span class="m-name">Toggle on update</span>
+          <span class="m-note">Pin flips once per cycle, so the output period is twice the counter period.</span></span></label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <span class="label">Lab 3 presets</span>
+      <div class="presets">
+        <button type="button" data-p="ex2pwm">Ex 2 · PWM 100 µs</button>
+        <button type="button" data-p="ex2tog">Ex 2 · toggle 100 µs</button>
+        <button type="button" data-p="ex3a">Ex 3 · 500 ms</button>
+        <button type="button" data-p="ex3b">Ex 3 · 490.5 ms</button>
+        <button type="button" data-p="ex3c">Ex 3 · 999.9 ms</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- --------------------------------- scope -------------------------------- -->
+  <div>
+    <div class="panel scope">
+      <div class="scope-head">
+        <div class="legend">
+          <span><i class="swatch" style="background: var(--cyan); --darkreader-inline-bg: var(--darkreader-bg--cyan);" data-darkreader-inline-bg=""></i>CNT</span>
+          <span><i class="swatch" style="background: rgb(143, 169, 189); --darkreader-inline-bgcolor: var(--darkreader-background-8fa9bd, #3b5263); --darkreader-inline-bgimage: none;" data-darkreader-inline-bgcolor="" data-darkreader-inline-bgimage=""></i>ARR</span>
+          <span><i class="swatch" style="background: var(--red); --darkreader-inline-bg: var(--darkreader-bg--red);" data-darkreader-inline-bg=""></i>update event</span>
+          <span><i class="swatch" style="background: var(--amber); --darkreader-inline-bg: var(--darkreader-bg--amber);" data-darkreader-inline-bg=""></i>output pin</span>
+        </div>
+        <div class="row">
+          <button type="button" id="run" class="primary">Pause</button>
+          <button type="button" id="restart">Restart</button>
+          <button type="button" id="slower">Slower</button>
+          <button type="button" id="faster">Faster</button>
+        </div>
+      </div>
+      <canvas id="cv" width="1095" height="482" role="img" aria-label="Counter value over time above the state of the output pin" style="height: 361.24px;"></canvas>
+
+      <div class="status">
+        <span><span class="led on" id="led"></span><span id="ledTxt">LED on</span></span>
+        <span class="isr" id="isr">ISR idle</span>
+        <span>update events: <b id="evts">75</b></span>
+        <span>simulated time: <b id="simt">97.688997 s</b></span>
+        <span id="rate" style="color: var(--dim); --darkreader-inline-color: var(--darkreader-text--dim, var(--darkreader-text-000000, #e8e6e3));" data-darkreader-inline-color="">running at 1.3× real speed</span>
+      </div>
+
+      <div class="warn" id="warn"></div>
+    </div>
+
+    <div class="readouts">
+      <div class="ro"><span class="label">One count lasts</span><span class="v" id="roTick">258.03 µs</span></div>
+      <div class="ro"><span class="label">Counter period</span><span class="v" id="roPeriod">1.29015 s</span></div>
+      <div class="ro"><span class="label">Update frequency</span><span class="v" id="roFreq">0.775104 Hz</span></div>
+      <div class="ro out"><span class="label" id="roOutLbl">Interrupt rate</span><span class="v" id="roOut">0.775104 Hz · LED 2.5803 s</span></div>
+    </div>
+
+    <div class="formula">
+      <div class="top">Counter period, with your numbers substituted</div>
+      <div id="fml">T = (PSC + 1) × (ARR + 1) / f_TIM = (<b>25802</b> + 1) × (<b>4999</b> + 1) / <b>100 MHz</b> = 1.29015 s</div>
+    </div>
+  </div>
+</div>
+
+<div class="tasks panel">
+  <h2>Try these before you write any code</h2>
+  <ol>
+    <li>Set PSC to 9999 and read the tick: one count is 100&nbsp;µs. Now
+ set ARR to 4999, 4904 and 9998 in turn — these are the three periods 
+Exercise 3 asks for. Predict each period before you look at the readout.</li>
+    <li>Halve PSC and watch the counter period halve too, then double 
+ARR to get back where you started. Two different routes to the same 
+period — which one gives you finer adjustment?</li>
+    <li>Switch to <em>Toggle on update</em> with ARR&nbsp;=&nbsp;9999 and measure the output period. It is 200&nbsp;µs, not 100&nbsp;µs. This is the trap in Exercise 2.</li>
+    <li>In PWM mode, move CCR while keeping ARR fixed. The frequency 
+never changes, only the duty cycle. Find the CCR that gives a square 
+wave.</li>
+    <li>Set PSC&nbsp;=&nbsp;0 and ARR&nbsp;=&nbsp;99999. Read the 
+warning — then fix it two ways: with a bigger prescaler, or by choosing a
+ 32-bit timer.</li>
+  </ol>
+  <p style="color: var(--dim); font-size: 13px; margin-bottom: 0px; --darkreader-inline-color: var(--darkreader-text--dim, var(--darkreader-text-000000, #e8e6e3));" data-darkreader-inline-color="">In STM32CubeIDE the <em>Prescaler</em> field is PSC and <em>Counter Period</em> is ARR. You type the register value; the hardware adds the +1 in both cases, which is why 9999 gives a division by 10000.</p>
+</div>
+
+<footer>Timer Bench — teaching aid for Laboratory 3 (Interrupts and 
+Timers), NUCLEO-F411RE. The simulation runs far slower than real 
+hardware so the counter is visible; the rate is shown next to the clock 
+readout.</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var el = function (id) { return document.getElementById(id); };
+  var cv = el("cv"), ctx = cv.getContext("2d");
+
+  var S = {
+    f: 100e6,
+    psc: 9999,
+    arr: 4999,
+    ccr: 2500,
+    mode: "irq",
+    t: 0,             // simulated time, seconds
+    running: true,
+    speedIdx: 3,      // index into SPEEDS: how many counter periods per real second
+    events: 0,
+    lastEventAt: -1e9 // real ms of last update event, for the ISR flash
+  };
+
+  var SPEEDS = [0.1, 0.25, 0.5, 1, 2, 4, 10];
+  var WINDOW_PERIODS = 3;   // counter periods visible across the canvas
+
+  // ---------------------------------------------------------------- helpers
+  function tick()   { return (S.psc + 1) / S.f; }              // seconds per count
+  function period() { return (S.arr + 1) * tick(); }           // seconds per counter cycle
+
+  function fmtTime(s) {
+    if (!isFinite(s) || s <= 0) return "—";
+    if (s >= 1)     return trim(s) + " s";
+    if (s >= 1e-3)  return trim(s * 1e3) + " ms";
+    if (s >= 1e-6)  return trim(s * 1e6) + " µs";
+    return trim(s * 1e9) + " ns";
+  }
+  function fmtFreq(hz) {
+    if (!isFinite(hz) || hz <= 0) return "—";
+    if (hz >= 1e6) return trim(hz / 1e6) + " MHz";
+    if (hz >= 1e3) return trim(hz / 1e3) + " kHz";
+    return trim(hz) + " Hz";
+  }
+  function trim(v) {
+    var r = Math.round(v * 1e6) / 1e6;
+    return String(r).length > 9 ? r.toPrecision(6).replace(/0+$/, "").replace(/\.$/, "") : String(r);
+  }
+  function clampInt(v, lo, hi, dflt) {
+    v = Math.floor(Number(v));
+    if (!isFinite(v)) return dflt;
+    return Math.min(hi, Math.max(lo, v));
+  }
+
+  // --------------------------------------------------------------- controls
+  function bindPair(numId, rangeId, key, lo, hi) {
+    var n = el(numId), r = el(rangeId);
+    function set(v, fromRange) {
+      S[key] = clampInt(v, lo, hi, S[key]);
+      n.value = S[key];
+      r.value = Math.min(Number(r.max), S[key]);
+      if (key === "arr" && S.ccr > S.arr + 1) { S.ccr = S.arr + 1; el("ccr").value = S.ccr; el("ccrR").value = S.ccr; }
+      S.t = 0; S.events = 0;
+      refresh();
+    }
+    n.addEventListener("input", function () { set(n.value, false); });
+    r.addEventListener("input", function () { set(r.value, true); });
+  }
+  bindPair("psc", "pscR", "psc", 0, 65535);
+  bindPair("arr", "arrR", "arr", 1, 4294967295);
+  bindPair("ccr", "ccrR", "ccr", 0, 4294967295);
+
+  el("fclk").addEventListener("change", function () {
+    S.f = Number(this.value); S.t = 0; S.events = 0; refresh();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("input[name=mode]"), function (r) {
+    r.addEventListener("change", function () { S.mode = this.value; S.t = 0; S.events = 0; refresh(); });
+  });
+
+  var PRESETS = {
+    ex2pwm: { f: 100e6, psc: 0,    arr: 9999, ccr: 5000, mode: "pwm" },
+    ex2tog: { f: 100e6, psc: 0,    arr: 4999, ccr: 2500, mode: "toggle" },
+    ex3a:   { f: 100e6, psc: 9999, arr: 4999, ccr: 2500, mode: "irq" },
+    ex3b:   { f: 100e6, psc: 9999, arr: 4904, ccr: 2452, mode: "irq" },
+    ex3c:   { f: 100e6, psc: 9999, arr: 8998, ccr: 4499, mode: "irq" }
+  };
+  PRESETS.ex3c.arr = 9998;
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-p]"), function (b) {
+    b.addEventListener("click", function () {
+      var p = PRESETS[this.getAttribute("data-p")];
+      S.f = p.f; S.psc = p.psc; S.arr = p.arr; S.ccr = p.ccr; S.mode = p.mode;
+      S.t = 0; S.events = 0;
+      el("fclk").value = String(p.f);
+      el("psc").value = p.psc; el("pscR").value = Math.min(65535, p.psc);
+      el("arr").value = p.arr; el("arrR").value = Math.min(20000, p.arr);
+      el("ccr").value = p.ccr; el("ccrR").value = Math.min(20000, p.ccr);
+      document.querySelector('input[name=mode][value="' + p.mode + '"]').checked = true;
+      refresh();
+    });
+  });
+
+  el("run").addEventListener("click", function () {
+    S.running = !S.running;
+    this.textContent = S.running ? "Pause" : "Run";
+  });
+  el("restart").addEventListener("click", function () { S.t = 0; S.events = 0; refresh(); });
+  el("slower").addEventListener("click", function () { S.speedIdx = Math.max(0, S.speedIdx - 1); refresh(); });
+  el("faster").addEventListener("click", function () { S.speedIdx = Math.min(SPEEDS.length - 1, S.speedIdx + 1); refresh(); });
+
+  // --------------------------------------------------------------- readouts
+  function refresh() {
+    var tk = tick(), pd = period();
+
+    el("roTick").textContent   = fmtTime(tk);
+    el("roPeriod").textContent = fmtTime(pd);
+    el("roFreq").textContent   = fmtFreq(1 / pd);
+
+    var outLbl = el("roOutLbl"), outVal = el("roOut");
+    if (S.mode === "pwm") {
+      var duty = Math.min(1, S.ccr / (S.arr + 1)) * 100;
+      outLbl.textContent = "Output on the pin";
+      outVal.textContent = fmtFreq(1 / pd) + " · " + trim(Math.round(duty * 10) / 10) + "% duty";
+    } else if (S.mode === "toggle") {
+      outLbl.textContent = "Output on the pin";
+      outVal.textContent = fmtTime(pd * 2) + " · " + fmtFreq(1 / (pd * 2));
+    } else {
+      outLbl.textContent = "Interrupt rate";
+      outVal.textContent = fmtFreq(1 / pd) + " · LED " + fmtTime(pd * 2);
+    }
+
+    el("fml").innerHTML =
+      "T = (PSC + 1) &times; (ARR + 1) / f_TIM = (<b>" + S.psc + "</b> + 1) &times; (<b>" + S.arr +
+      "</b> + 1) / <b>" + trim(S.f / 1e6) + " MHz</b> = " + fmtTime(pd);
+
+    el("ccrField").style.opacity = (S.mode === "pwm") ? "1" : "0.4";
+    el("ccr").disabled = el("ccrR").disabled = (S.mode !== "pwm");
+
+    // real-time scale: how slow the simulation is compared with hardware
+    var simPerReal = SPEEDS[S.speedIdx] * pd;             // simulated seconds per real second
+    el("rate").textContent = simPerReal >= 1
+      ? "running at " + trim(Math.round(simPerReal * 10) / 10) + "× real speed"
+      : "running at 1/" + Math.round(1 / simPerReal).toLocaleString() + " of real speed";
+
+    var w = el("warn"), msgs = [];
+    if (S.arr > 65535) msgs.push("ARR = " + S.arr + " does not fit in a 16-bit timer. Raise PSC, or use TIM2 or TIM5 — they have 32-bit counters.");
+    if (S.mode === "pwm" && S.ccr > S.arr) msgs.push("CCR is larger than ARR, so the compare never matches and the pin stays high all the time.");
+    if (S.mode === "pwm" && S.ccr === 0) msgs.push("CCR = 0 means 0% duty — the pin never goes high.");
+    if (msgs.length) { w.textContent = msgs.join("  "); w.className = "warn show"; }
+    else { w.className = "warn"; }
+
+    if (!S.running) draw(performance.now());
+  }
+
+  // ------------------------------------------------------------------ model
+  function countAt(t) {                      // CNT at simulated time t
+    var pd = period();
+    var into = t - Math.floor(t / pd) * pd;
+    return Math.min(S.arr, Math.floor(into / tick()));
+  }
+  function cyclesAt(t) { return Math.floor(t / period()); }
+  function pinAt(t) {                         // logic level of the output pin
+    if (S.mode === "pwm")    return countAt(t) < S.ccr ? 1 : 0;
+    if (S.mode === "toggle") return cyclesAt(t) % 2;
+    return cyclesAt(t) % 2;                   // software LED in interrupt mode
+  }
+
+  // ----------------------------------------------------------------- canvas
+  function fit() {
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = cv.clientWidth || 800;
+    var h = Math.max(300, Math.min(430, w * 0.44));
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    cv.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: w, h: h };
+  }
+
+  function draw(now) {
+    var d = fit(), W = d.w, H = d.h;
+    var padL = 46, padR = 12, padT = 12, padB = 22;
+    var gap = 16;
+    var plotW = W - padL - padR;
+    var topH = Math.round((H - padT - padB - gap) * 0.62);
+    var botH = (H - padT - padB - gap) - topH;
+    var topY = padT, botY = padT + topH + gap;
+
+    ctx.clearRect(0, 0, W, H);
+
+    var pd = period(), span = pd * WINDOW_PERIODS;
+    var t1 = Math.max(S.t, span), t0 = t1 - span;
+    var xOf = function (t) { return padL + (t - t0) / span * plotW; };
+
+    // ---- frames
+    ctx.strokeStyle = "#24445E"; ctx.lineWidth = 1;
+    ctx.strokeRect(padL + .5, topY + .5, plotW - 1, topH - 1);
+    ctx.strokeRect(padL + .5, botY + .5, plotW - 1, botH - 1);
+
+    // ---- grid: one line per counter period
+    ctx.strokeStyle = "#1B364B";
+    for (var k = Math.ceil(t0 / pd); k * pd <= t1; k++) {
+      var gx = Math.round(xOf(k * pd)) + .5;
+      ctx.beginPath(); ctx.moveTo(gx, topY); ctx.lineTo(gx, botY + botH); ctx.stroke();
+    }
+
+    // ---- ARR ceiling
+    var yTop = topY + 8, yBot = topY + topH - 6;
+    var yOf = function (c) { return yBot - (c / (S.arr + 1)) * (yBot - yTop); };
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "#8FA9BD";
+    ctx.beginPath(); ctx.moveTo(padL, yOf(S.arr)); ctx.lineTo(padL + plotW, yOf(S.arr)); ctx.stroke();
+
+    // ---- CCR line (PWM only)
+    if (S.mode === "pwm") {
+      ctx.strokeStyle = "rgba(245,165,36,.75)";
+      ctx.beginPath(); ctx.moveTo(padL, yOf(Math.min(S.ccr, S.arr + 1))); ctx.lineTo(padL + plotW, yOf(Math.min(S.ccr, S.arr + 1))); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // ---- axis labels
+    ctx.fillStyle = "#7E9AB0";
+    ctx.font = "11px ui-monospace, Consolas, monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(String(S.arr), padL - 6, yOf(S.arr) + 4);
+    ctx.fillText("0", padL - 6, yOf(0) + 4);
+    if (S.mode === "pwm" && S.ccr <= S.arr) {
+      ctx.fillStyle = "rgba(245,165,36,.9)";
+      ctx.fillText(String(S.ccr), padL - 6, yOf(S.ccr) + 4);
+    }
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#7E9AB0";
+    ctx.fillText("CNT", padL + 6, topY + 14);
+    ctx.fillText(S.mode === "irq" ? "LED (set by the ISR)" : "PIN", padL + 6, botY + 14);
+
+    // ---- counter sawtooth
+    ctx.strokeStyle = "#45D0E5"; ctx.lineWidth = 2; ctx.beginPath();
+    var prev = -1, started = false;
+    for (var x = 0; x <= plotW; x++) {
+      var t = t0 + (x / plotW) * span;
+      if (t > S.t) break;
+      var c = countAt(t), px = padL + x, py = yOf(c);
+      if (!started || c < prev) { ctx.moveTo(px, py); started = true; }
+      else ctx.lineTo(px, py);
+      prev = c;
+    }
+    ctx.stroke();
+
+    // ---- update events
+    ctx.strokeStyle = "rgba(255,92,77,.85)"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    for (var m = Math.ceil(t0 / pd); m * pd <= Math.min(t1, S.t); m++) {
+      if (m === 0) continue;
+      var ex = Math.round(xOf(m * pd)) + .5;
+      ctx.beginPath(); ctx.moveTo(ex, topY + 2); ctx.lineTo(ex, botY + botH - 2); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // ---- output / LED trace
+    var hi = botY + 12, lo = botY + botH - 12;
+    ctx.strokeStyle = "#F5A524"; ctx.lineWidth = 2; ctx.beginPath();
+    var first = true, lastY = null;
+    for (var x2 = 0; x2 <= plotW; x2++) {
+      var t2 = t0 + (x2 / plotW) * span;
+      if (t2 > S.t) break;
+      var y2 = pinAt(t2) ? hi : lo, px2 = padL + x2;
+      if (first) { ctx.moveTo(px2, y2); first = false; }
+      else { if (y2 !== lastY) ctx.lineTo(px2, lastY); ctx.lineTo(px2, y2); }
+      lastY = y2;
+    }
+    ctx.stroke();
+
+    // ---- time axis label
+    ctx.fillStyle = "#7E9AB0"; ctx.font = "11px ui-monospace, Consolas, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(fmtTime(span) + " across the screen", padL + plotW / 2, H - 6);
+    ctx.textAlign = "left";
+  }
+
+  // ------------------------------------------------------------------- loop
+  var lastFrame = performance.now();
+  function frame(now) {
+    var dtReal = Math.min(0.05, (now - lastFrame) / 1000);
+    lastFrame = now;
+
+    if (S.running) {
+      var before = cyclesAt(S.t);
+      S.t += dtReal * SPEEDS[S.speedIdx] * period();
+      var after = cyclesAt(S.t);
+      if (after > before) { S.events += (after - before); S.lastEventAt = now; }
+    }
+
+    draw(now);
+
+    var on = pinAt(S.t) === 1;
+    var led = el("led");
+    if (S.mode === "pwm") { on = countAt(S.t) < S.ccr; }
+    led.className = on ? "led on" : "led";
+    el("ledTxt").textContent = (S.mode === "irq" ? "LED " : "pin ") + (on ? "on" : "off");
+    el("evts").textContent = S.events.toLocaleString();
+    el("simt").textContent = fmtTime(S.t);
+
+    var isr = el("isr");
+    if (S.mode === "irq") {
+      var fresh = (now - S.lastEventAt) < 140;
+      isr.className = fresh ? "isr fire" : "isr";
+      isr.textContent = fresh ? "ISR running" : "ISR idle";
+      isr.style.display = "";
+    } else {
+      isr.style.display = "none";
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener("resize", function () { draw(performance.now()); });
+
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    S.running = false;
+    el("run").textContent = "Run";
+  }
+  refresh();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+
+</body></html>
