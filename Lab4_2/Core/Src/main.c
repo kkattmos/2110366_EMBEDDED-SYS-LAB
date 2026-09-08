@@ -107,7 +107,7 @@ int main(void)
 	if (HAL_ADC_PollForConversion(&hadc1, 1000) == HAL_OK) {
 		adcval = HAL_ADC_GetValue(&hadc1);
 		sprintf(buf, "%d\r\n", adcval);
-		HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), 10);
+		HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), 1000);
 	}
 
 	HAL_Delay(100);
