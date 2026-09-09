@@ -48,8 +48,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 int adcval = 0;
-int max_light = 450;
-int min_light = 90;
+int max_light = 1000;
+int min_light = 3500;
 int duty_cycle = 0;
 /* USER CODE END PV */
 

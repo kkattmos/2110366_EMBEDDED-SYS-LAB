@@ -27,25 +27,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  0000505c  2**0
                   CONTENTS, READONLY
- 12 .debug_info   000085d6  00000000  00000000  0000508c  2**0
+ 12 .debug_info   000085e6  00000000  00000000  0000508c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 000015f8  00000000  00000000  0000d662  2**0
+ 13 .debug_abbrev 000015f8  00000000  00000000  0000d672  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00000748  00000000  00000000  0000ec60  2**3
+ 14 .debug_aranges 00000748  00000000  00000000  0000ec70  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 0000058f  00000000  00000000  0000f3a8  2**0
+ 15 .debug_rnglists 0000058f  00000000  00000000  0000f3b8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  00015f50  00000000  00000000  0000f937  2**0
+ 16 .debug_macro  00015f50  00000000  00000000  0000f947  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00008702  00000000  00000000  00025887  2**0
+ 17 .debug_line   00008701  00000000  00000000  00025897  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0009122b  00000000  00000000  0002df89  2**0
+ 18 .debug_str    0009122b  00000000  00000000  0002df98  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  000bf1b4  2**0
+ 19 .comment      00000043  00000000  00000000  000bf1c3  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  0000221c  00000000  00000000  000bf1f8  2**2
+ 20 .debug_frame  0000221c  00000000  00000000  000bf208  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000066  00000000  00000000  000c1414  2**0
+ 21 .debug_line_str 00000066  00000000  00000000  000c1424  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -445,8 +445,8 @@ Disassembly of section .text:
   */
 int main(void)
 {
- 80005bc:	b590      	push	{r4, r7, lr}
- 80005be:	b083      	sub	sp, #12
+ 80005bc:	b580      	push	{r7, lr}
+ 80005be:	b082      	sub	sp, #8
  80005c0:	af00      	add	r7, sp, #0
   /* USER CODE END 1 */
 
@@ -492,37 +492,36 @@ int main(void)
  80005e6:	f000 fc61 	bl	8000eac <HAL_ADC_PollForConversion>
  80005ea:	4603      	mov	r3, r0
  80005ec:	2b00      	cmp	r3, #0
- 80005ee:	d117      	bne.n	8000620 <main+0x64>
+ 80005ee:	d116      	bne.n	800061e <main+0x62>
 		adcval = HAL_ADC_GetValue(&hadc1);
  80005f0:	480d      	ldr	r0, [pc, #52]	@ (8000628 <main+0x6c>)
  80005f2:	f000 fce6 	bl	8000fc2 <HAL_ADC_GetValue>
  80005f6:	4603      	mov	r3, r0
  80005f8:	607b      	str	r3, [r7, #4]
 		sprintf(buf, "%d\r\n", adcval);
- 80005fa:	78fb      	ldrb	r3, [r7, #3]
+ 80005fa:	463b      	mov	r3, r7
  80005fc:	687a      	ldr	r2, [r7, #4]
  80005fe:	490b      	ldr	r1, [pc, #44]	@ (800062c <main+0x70>)
  8000600:	4618      	mov	r0, r3
  8000602:	f002 fa41 	bl	8002a88 <siprintf>
-		HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), 10);
- 8000606:	78fb      	ldrb	r3, [r7, #3]
- 8000608:	461c      	mov	r4, r3
- 800060a:	78fb      	ldrb	r3, [r7, #3]
- 800060c:	4618      	mov	r0, r3
- 800060e:	f7ff fde7 	bl	80001e0 <strlen>
- 8000612:	4603      	mov	r3, r0
- 8000614:	b29a      	uxth	r2, r3
- 8000616:	230a      	movs	r3, #10
- 8000618:	4621      	mov	r1, r4
- 800061a:	4805      	ldr	r0, [pc, #20]	@ (8000630 <main+0x74>)
- 800061c:	f001 fe78 	bl	8002310 <HAL_UART_Transmit>
+		HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), 1000);
+ 8000606:	463b      	mov	r3, r7
+ 8000608:	4618      	mov	r0, r3
+ 800060a:	f7ff fde9 	bl	80001e0 <strlen>
+ 800060e:	4603      	mov	r3, r0
+ 8000610:	b29a      	uxth	r2, r3
+ 8000612:	4639      	mov	r1, r7
+ 8000614:	f44f 737a 	mov.w	r3, #1000	@ 0x3e8
+ 8000618:	4805      	ldr	r0, [pc, #20]	@ (8000630 <main+0x74>)
+ 800061a:	f001 fe79 	bl	8002310 <HAL_UART_Transmit>
 	}
 
 	HAL_Delay(100);
- 8000620:	2064      	movs	r0, #100	@ 0x64
- 8000622:	f000 fb27 	bl	8000c74 <HAL_Delay>
+ 800061e:	2064      	movs	r0, #100	@ 0x64
+ 8000620:	f000 fb28 	bl	8000c74 <HAL_Delay>
 	HAL_ADC_Start(&hadc1);
- 8000626:	e7d8      	b.n	80005da <main+0x1e>
+ 8000624:	e7d9      	b.n	80005da <main+0x1e>
+ 8000626:	bf00      	nop
  8000628:	20000078 	.word	0x20000078
  800062c:	080033e0 	.word	0x080033e0
  8000630:	200000c0 	.word	0x200000c0

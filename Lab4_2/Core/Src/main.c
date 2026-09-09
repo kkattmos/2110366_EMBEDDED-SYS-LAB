@@ -95,7 +95,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   int adcval = 0;
-  char buf;
+  char buf[3];
   /* USER CODE END 2 */
 
   /* Infinite loop */
