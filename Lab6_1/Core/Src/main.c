@@ -44,11 +44,17 @@
 UART_HandleTypeDef huart2;
 
 osThreadId defaultTaskHandle;
+osMutexId UartMutexHandle;
 /* USER CODE BEGIN PV */
 osThreadId thread1Handle;
 osThreadId thread2Handle;
 osThreadId thread3Handle;
 osThreadId thread4Handle;
+osThreadId uartTx0Handle;
+osThreadId uartTx1Handle;
+
+// Mutex Handle 
+osMutexId uartMutexHandle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,6 +68,10 @@ void Thread1_50ms(void const *argument);
 void Thread2_18ms(void const *argument);
 void Thread3_128ms(void const *argument);
 void Thread4_64ms(void const *argument);
+
+// UART 
+void Task_UART_Tx0(void const *argument);
+void Task_UART_Tx1(vodi const *argument);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -117,7 +127,24 @@ int main(void)
   osThreadDef(Task4, Thread4_64ms, osPriorityNormal, 0, 128);
   thread4Handle = osThreadCreate(osThread(Task4), NULL);
 
+  // Mutex 
+  osMutexDef(UartMutex);
+  uartMutexHandle = osMutexCreate(osMutex(UartMutex));
+  
+  // UART Transmitter Thread 0 
+  osThreadDef(UartTx0, Task_UART_Tx0, osPriorityNormal, 0, 256);
+  uartTx0Handle = osThreadCreate(osThread(UartTx0), NULL);
+
+  // UART Transmitter Thread 1 
+  osThreadDef(UartTx1, Task_UART_Tx1, osPriorityNormal, 0, 256);
+  uartTx1Handle = osThreadCreate(osThread(UartTx1), NULL);
+
   /* USER CODE END 2 */
+
+  /* Create the mutex(es) */
+  /* definition and creation of UartMutex */
+  osMutexDef(UartMutex);
+  UartMutexHandle = osMutexCreate(osMutex(UartMutex));
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -319,6 +346,29 @@ void Thread4_64ms(void const *argument) {
   while (1) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
     osDelay(64);
+  }
+}
+
+// UART Thread 0 
+void Task_UART_Tx0(void const *argument) {
+  int threadID = 0;
+  int idx = 0;
+  char buffer[5];
+
+  while (1) {
+    sprintf(buffer, "TID: %d %d\r\n", threadID, idx++);
+    HAL_UART_Transmit($huart2, (uint8_t*)buffer, strlen(buffer), 1000);
+  }
+}
+
+void Task_UART_Tx1(void const *argument) {
+  int threadID = 1;
+  int idx = 0;
+  char buffer[5];
+
+  while (1) {
+    sprintf(buffer, "TID: %d %d\r\n", threadID, idx++);
+    HAL_UART_Transmit($huart2, (uint8_t*)buffer, strlen(buffer), 1000);
   }
 }
 

@@ -2,7 +2,8 @@
 CAD.formats=
 CAD.pinconfig=
 CAD.provider=
-FREERTOS.IPParameters=Tasks01
+FREERTOS.IPParameters=Tasks01,Mutexes01
+FREERTOS.Mutexes01=UartMutex,Dynamic,NULL,Available
 FREERTOS.Tasks01=defaultTask,0,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
 File.Version=6
 GPIO.groupedBy=Group By Peripherals
