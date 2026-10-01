@@ -45,6 +45,7 @@
 UART_HandleTypeDef huart2;
 
 osThreadId defaultTaskHandle;
+osMessageQId uartQueueHandle;
 osMutexId UartMutexHandle;
 /* USER CODE BEGIN PV */
 osThreadId thread1Handle;
@@ -53,6 +54,7 @@ osThreadId thread3Handle;
 osThreadId thread4Handle;
 osThreadId uartTx0Handle;
 osThreadId uartTx1Handle;
+osThreadId uartConsumerHandle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,6 +72,9 @@ void Thread4_64ms(void const *argument);
 // UART 
 void Task_UART_Tx0(void const *argument);
 void Task_UART_Tx1(void const *argument);
+
+// Function prototypes
+void Task_UART_Consumer(void const *argument);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -125,13 +130,19 @@ int main(void)
   osThreadDef(Task4, Thread4_64ms, osPriorityNormal, 0, 128);
   thread4Handle = osThreadCreate(osThread(Task4), NULL);
   
-  // UART Transmitter Thread 0 
+  // Producer Thread 0  
   osThreadDef(UartTx0, Task_UART_Tx0, osPriorityNormal, 0, 256);
   uartTx0Handle = osThreadCreate(osThread(UartTx0), NULL);
-
-  // UART Transmitter Thread 1 
+  
+  // Producer Thread 1 
   osThreadDef(UartTx1, Task_UART_Tx1, osPriorityNormal, 0, 256);
   uartTx1Handle = osThreadCreate(osThread(UartTx1), NULL);
+
+  // Consumer Threads 
+  osThreadDef(UartConsumer, Task_UART_Consumer, osPriorityNormal, 0, 256);
+  uartConsumerHandle = osThreadCreate(osThread(UartConsumer), NULL);
+
+
 
   /* USER CODE END 2 */
 
@@ -151,6 +162,11 @@ int main(void)
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
+
+  /* Create the queue(s) */
+  /* definition and creation of uartQueue */
+  osMessageQDef(uartQueue, 16, uint32_t);
+  uartQueueHandle = osMessageCreate(osMessageQ(uartQueue), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -343,33 +359,59 @@ void Thread4_64ms(void const *argument) {
   }
 }
 
-// UART Thread 0 
+// UART Consumer Thread 
+void Task_UART_Consumer(void const *argument) {
+  osEvent event;
+  char *msgPtr;
+
+  while (1) {
+    event = osMessageGet(uartQueueHandle, osWaitForever);
+    if (event.status == osEventMessage) {
+      msgPtr = (char*)event.value.p;
+      HAL_UART_Transmit(&huart2, (uint8_t*)msgPtr, strlen(msgPtr), 1000);
+      vPortFree(msgPtr);
+    }
+  }
+}
+
+// UART Producer Thread 0 
 void Task_UART_Tx0(void const *argument) {
   int threadID = 0;
   int idx = 0;
-  char buffer[32];
 
   while (1) {
-    sprintf(buffer, "TID: %d %d\r\n", threadID, idx);
-    idx++;
-    osMutexWait(UartMutexHandle, osWaitForever);
-    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), 1000);
-    osMutexRelease(UartMutexHandle);
+    char *buffer = (char*)pvPortMalloc(32 * sizeof(char));
+    if (buffer == NULL) {
+      osDelay(1);
+      continue;
+    }
+    
+    snprintf(buffer, 32, "TID: %d %d\r\n", threadID, idx++);
+
+    if (osMessagePut(uartQueueHandle, (uint32_t)buffer, 100) != osOK) {
+      vPortFree(buffer);
+    }
     osDelay(1);
   }
 }
 
+// UART Producer Thread 1 
 void Task_UART_Tx1(void const *argument) {
   int threadID = 1;
   int idx = 0;
-  char buffer[32];
 
   while (1) {
-    sprintf(buffer, "TID: %d %d\r\n", threadID, idx);
-    idx++;
-    osMutexWait(UartMutexHandle, osWaitForever);
-    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), 1000);
-    osMutexRelease(UartMutexHandle);
+    char *buffer = (char*)pvPortMalloc(32 * sizeof(char));
+    if (buffer == NULL) {
+      osDelay(1);
+      continue;
+    }  
+    
+    snprintf(buffer, 32, "TID: %d %d\r\n", threadID, idx++);
+    
+    if (osMessagePut(uartQueueHandle, (uint32_t)buffer, 100) != osOK) {
+      vPortFree(buffer);
+    }
     osDelay(1);
   }
 }
