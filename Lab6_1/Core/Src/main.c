@@ -314,7 +314,7 @@ static void MX_GPIO_Init(void)
 // Thread1_50ms
 void Thread1_50ms(void const *argument) {
   while (1) {
-    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
     osDelay(50);
   }
 }
