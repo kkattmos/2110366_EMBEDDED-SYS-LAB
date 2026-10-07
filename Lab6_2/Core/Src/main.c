@@ -294,7 +294,7 @@ static void MX_GPIO_Init(void)
 
 // Timer 1
 void Timer1_Callback(void const *argument) {
-  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_9);
+  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 }
 
 void Timer2_Callback(void const *argument) {
